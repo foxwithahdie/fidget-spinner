@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Info File="setup/oscillation_measurement.m" GroupUUID="default" Icon="" Name="oscillation_measurement" Type="StartUp" Visible="0">
+    <Extension Name="StartUpPrev" Value="HEAD"/>
+</Info>

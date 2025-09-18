@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Info File="setup/angular_velocity_measurement.m" GroupUUID="default" Icon="" Name="angular_velocity_measurement" Type="StartUp" Visible="0">
+    <Extension Name="StartUpPrev" Value="82d99184-bdb1-4936-9fa8-7df961103fff"/>
+</Info>

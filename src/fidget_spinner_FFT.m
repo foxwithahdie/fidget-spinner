@@ -1,121 +1,121 @@
-%uses FFT and some filtering tricks to extract angular velocity of fidget
-%spinner as a function of time
+% Uses FFT and some filtering tricks to extract angular velocity of fidget
+% spinner as a function of time.
 %INPUTS:
-%   y: list of averaged pixel values from video
-%   Fs: frame rate
+%   avg_pixel_values: list of averaged pixel values from video
+%   frame_rate: frame rate
 %   T_window: width of FFT window (in seconds) .7 is usually good
 %   q: a parameter used to filter which portions of frequency curve to use
 %       (filter is by width of flat portions of curve)
 %       value should be in interval [0,1]
 %       values closer to 1 are most "exclusive". 
 %       .6 is a pretty good value to choose
-%   showAnalysis: boolean that turns visualization on/off
+%   show_analysis: boolean that turns visualization on/off
 %OUTPUTS:
-%   tlist: list of times for measured values of angular frequency
+%   t_list: list of times for measured values of angular frequency
 %   omega_list: measured value of angular frequency
-function [tlist,omega_list] = fidget_spinner_FFT(y,Fs,T_window,q,showAnalysis)
-    %compute number of data points to use in FFT
-    N_window = ceil(Fs*T_window);
-    %perform windowed FFT of data and pull out peak frequencies
-    [tlist1,freq_list1] = extract_max_integer_freq(y,Fs,N_window,showAnalysis);
-    %extract the midpoints and heights of the large flat portions of signal
-    [midpoint_list,height_list,width_list] = compute_contiguous_centroids(tlist1,freq_list1);
-    [tlist,heights_filtererd] = filter_by_widths(midpoint_list,height_list,width_list,q);
-    %de-alias signal using the fact that frequency is decreasing
-    omega_list = de_alias_signal(heights_filtererd,N_window);
+function [t_list,omega_list] = fidget_spinner_FFT(avg_pixel_values, frame_rate, T_window, q, show_analysis)
+    
+    % compute number of data points to use in FFT
+    N_window = ceil(frame_rate * T_window);
+    
+    % perform windowed FFT of data and pull out peak frequencies
+    [t_list_1,freq_list_1] = extract_max_integer_freq(avg_pixel_values, frame_rate, N_window, show_analysis);
+    
+    % extract the midpoints and heights of the large flat portions of signal
+    [midpoint_list, height_list, width_list] = compute_contiguous_centroids(t_list_1, freq_list_1);
+    [t_list,heights_filtered] = filter_by_widths(midpoint_list, height_list, width_list,q);
+    
+    % de-alias signal using the fact that frequency is decreasing
+    omega_list = de_alias_signal(heights_filtered, N_window);
 
-    %convert from integer frequencies to angular velocity
-    omega_factor = 2*pi*Fs/N_window;
-    omega_list = omega_factor*omega_list;
+    % convert from integer frequencies to angular velocity
+    omega_factor = 2*pi * frame_rate / N_window;
+    omega_list = omega_factor * omega_list;
 
-    %if showAnalysis is true, generate plots showing different stages
-    %of the filtered data
-    if showAnalysis
-        figure();
-        hold on
-        plot(tlist1,omega_factor*freq_list1,'k','linewidth',1)
-        plot(tlist,omega_factor*heights_filtererd,'bo','markerfacecolor','b','markersize',3);
-        plot(tlist,omega_list,'ro','markerfacecolor','r','markersize',3);
-        xlabel('time (sec)');
-        ylabel('frequency (rad/sec)');
-        title('Filtering Process');
-        legend('Initial Data','Plateau Centroids','Alias Correction');
+    % if showAnalysis is true, generate plots showing different stages of the filtered data
+    if show_analysis
+        figure(); hold on
+            plot(t_list_1, omega_factor * freq_list_1, Color='k', LineWidth=1)
+            plot(t_list, omega_factor * heights_filtered, 'o', Color='b', MarkerFaceColor='b', MarkerSize=3);
+            plot(t_list, omega_list,'o', Color='r', MarkerFaceColor='r', MarkerSize=3);
+            xlabel('Time (s)');
+            ylabel('Frequency (rad/s)');
+            title('Filtering Process');
+            legend('Initial Data','Plateau Centroids','Alias Correction');
+        hold off
     end
 
-    tlist = tlist-tlist(1);
+    t_list = t_list - t_list(1);
 end
 
-%perform windowed FFT on data and exract the maximum
-%integer frequency of the FFT for each window
+% Perform windowed FFT on data and exract the maximum integer frequency of
+% the FFT for each window.
 %INPUTS:
-%   y: list of averaged pixel values from video
-%   Fs: frame rate
-%   N_window: number of data points to use in each windowed FFT
-%   showFFT: boolean that turns visualization on/off
+%   avg_pixel_values: List of averaged pixel values from video
+%   frame_rate: Frame rate
+%   N_window: Number of data points to use in each windowed FFT
+%   show_FFT: Boolean that turns visualization on/off
 %OUTPUTS:
-%   tlist: list of times for each FFT
-%   freq_list: maximum integer frequency of each FFT
-function [tlist,freq_list] = extract_max_integer_freq(y,Fs,N_window,showFFT) 
-    %used for plotting signal being processed
-    tlist_base = (0:(length(y)-1))/Fs;
+%   t_list: List of times for each FFT
+%   freq_list: Maximum integer frequency of each FFT
+function [t_list, freq_list] = extract_max_integer_freq(avg_pixel_values, frame_rate, N_window, show_FFT) 
+    % Used for plotting signal being processed
+    t_list_base = (0:(length(avg_pixel_values)-1)) / frame_rate;
 
-    %shift values of y so it has a mean of 0
-    y = y-mean(y);
-    %compute how many points there are in y
-    Nsamples = length(y);
-    %given size of window, compute the possible frequency range
-    %of the FFT (using that window size)
-    max_integer_freq = floor(N_window/2);
+    % Shift values of y so it has a mean of 0
+    avg_pixel_values = avg_pixel_values-mean(avg_pixel_values);
+    % Compute how many points there are in y
+    N_samples = length(avg_pixel_values);
+    % Given size of window, compute the possible frequency range of the FFT (using that window size)
+    max_integer_freq = floor(N_window / 2);
     max_integer_freq_index = max_integer_freq+1;
 
-    %initialize the return list
-    freq_list = zeros(1,Nsamples-N_window+1);
+    % Initialize the return list
+    freq_list = zeros(1,N_samples-N_window+1);
     
-    %initialize plotting objects as empty arrays
+    % Initialize plotting objects as empty arrays
     fft_fig = []; omega_fig = [];
     window_left_plot = []; window_right_plot = [];
     omega_plot = []; peak_plot = []; fft_plot = [];
 
-    %if we are plotting, initialize the plots
-    if showFFT
-        %create figure showing signal and fft of window
-        fft_fig=figure();
-        subplot(2,1,1);
-        hold on
-        title('Video Signal');
-        xlabel('time (sec)');
-        ylabel('Average Video Color Magnitude (-)');
-        plot(tlist_base,y,'k','linewidth',1);
-        axis([min(tlist_base),max(tlist_base),min(y),max(y)]);
-        window_left_plot = plot(0,0,'r','linewidth',1);
-        window_right_plot = plot(0,0,'r','linewidth',1);
-        subplot(2,1,2);
-        hold on
-        title('Windowed FFT of Video Signal');
-        xlabel('Integer Frequency (-)');
-        ylabel('Normalized FFT Magnitude (-)');
-        axis([0,max_integer_freq,0,1]);
-        fft_plot = plot(0,0,'k','linewidth',1);
-        peak_plot = plot(0,0,'ro','markerfacecolor','r','markersize',4);
+    % If we are plotting, initialize the plots
+    if show_FFT
+        % Create figure showing signal and fft of window
+        fft_fig = figure(); subplot(2, 1, 1); hold on
+            title('Video Signal');
+            xlabel('Time (s)');
+            ylabel('Average Video Color Magnitude (-)');
 
-        %create figure showing peak frequencies as a function of time
-        omega_fig = figure();
-        hold on
-        
-        omega_plot = plot(0,0,'k','linewidth',1);
-        axis([0,tlist_base(end),0,max_integer_freq]);
-        
-        title('Peak Frequency of Windowed FFT');
-        xlabel('time (sec)');
-        ylabel('Peak Integer Frequency (-)');
+            plot(t_list_base, avg_pixel_values, Color='k', LineWidth=1);
+            axis([ min(t_list_base), max(t_list_base), min(avg_pixel_values), max(avg_pixel_values) ]);
+            window_left_plot = plot(0, 0, Color='r',LineWidth=1);
+            window_right_plot = plot(0, 0, Color='r', LineWidth=1);    
+        subplot(2,1,2); hold on
+            title('Windowed FFT of Video Signal');
+            xlabel('Integer Frequency (-)');
+            ylabel('Normalized FFT Magnitude (-)');
+
+            axis([ 0, max_integer_freq, 0, 1 ]);
+            fft_plot = plot(0, 0, Color='k',LineWidth=1);
+            peak_plot = plot(0, 0, 'o', Color='r',MarkerFaceColor='r', MarkerSize=4);
+
+        % Create figure showing peak frequencies as a function of time
+        omega_fig = figure(); hold on
+            omega_plot = plot(0, 0, Color='k', LineWidth=1);
+            axis([ 0, t_list_base(end), 0, max_integer_freq ]);
+            
+            title('Peak Frequency of Windowed FFT');
+            xlabel('Time (s)');
+            ylabel('Peak Integer Frequency (-)');
+        hold off
     end
 
     %iterate through data
-    for n = 0:(Nsamples-N_window)
+    for n = 0:(N_samples-N_window)
         %left and right indices of the window
         index0 = n+1; index1 = n+N_window;
         %data points in window
-        y_vals = y(index0:index1);
+        y_vals = avg_pixel_values(index0:index1);
 
         %compute and normalize fft data (divide by peak height)
         dfty = abs(fft(y_vals));
@@ -129,23 +129,23 @@ function [tlist,freq_list] = extract_max_integer_freq(y,Fs,N_window,showFFT)
         freq_list(index0)=max_index-1;
 
         %if we are displaying the plots, update the plots
-        if showFFT && mod(index0,2)==0
+        if show_FFT && mod(index0,2)==0
             %update plot showing window and corresponding FFT
             set(0,'currentfigure',fft_fig);
-            set(window_left_plot,'xdata',tlist_base(index0)*[1,1],'ydata',[min(y),max(y)]);
-            set(window_right_plot,'xdata',tlist_base(index1)*[1,1],'ydata',[min(y),max(y)]);
+            set(window_left_plot,'xdata',t_list_base(index0)*[1,1],'ydata',[min(avg_pixel_values),max(avg_pixel_values)]);
+            set(window_right_plot,'xdata',t_list_base(index1)*[1,1],'ydata',[min(avg_pixel_values),max(avg_pixel_values)]);
             set(fft_plot,'xdata',0:length(dfty)-1,'ydata',dfty);
             set(peak_plot,'xdata',max_index-1,'ydata',1);
             drawnow;
 
             %update plot showing peak frequency as function of time
             set(0,'currentfigure',omega_fig);
-            set(omega_plot,'xdata',tlist_base(1:index0),'ydata',freq_list(1:index0));
+            set(omega_plot,'xdata',t_list_base(1:index0),'ydata',freq_list(1:index0));
             drawnow;
         end
     end
     %create tlist based on frame rate and length of freq_list
-    tlist = (0:(length(freq_list)-1))/Fs;
+    t_list = (0:(length(freq_list)-1))/frame_rate;
 end
 
 %given a data set (x_i,y_i), computes the locations and width of
