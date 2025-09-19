@@ -112,7 +112,7 @@ function [avg_pixel_values, frame_rate] = video_to_signal(filename, window_bound
         % Iterate through r, g, and b
         for n = 1:3
             % Set the region in the window to be grayscale using the the normalized (or only r/g/b) values
-            vidFrame(top:bottom,left:right,n)=v_out;
+            vidFrame(top:bottom, left:right, n) = v_out;
             
             % Visualize the window as a set of black lines in the frame
             vidFrame(max(top - 1, 1):min(top + 1, vid_obj.Height), :, n) = 0;
