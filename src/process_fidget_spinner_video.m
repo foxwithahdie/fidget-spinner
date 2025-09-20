@@ -1,4 +1,4 @@
-% Extracts angular velocity of fidget spinner from the video.
+% angular velocity of fidget spinner from the video.
 % INPUTS:
 %   filename: a string of the filename of the video you want to process
 %           the the video is not in the same folder, fname should include
