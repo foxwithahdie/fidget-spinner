@@ -1,4 +1,4 @@
-% angular velocity of fidget spinner from the video.
+% Angular velocity of fidget spinner from the video.
 % INPUTS:
 %   filename: a string of the filename of the video you want to process
 %           the the video is not in the same folder, fname should include
@@ -9,7 +9,7 @@
 % OUTPUTS:
 %   t_list: list of times for measured values of angular frequency
 %   freq_list: measured value of angular frequency
-function [t_list,freq_list] = process_fidget_spinner_video(filename, varargin)
+function [t_list, freq_list] = process_fidget_spinner_video(filename, varargin)
     T_window = 1;
     q = .6;
     showAnalysis = 1;
@@ -35,16 +35,23 @@ function avg_pixel_values = optimize_coefficients(data_mat)
     var_filter_param = .7;
     max_iter = 200; E_old = 0; E = 1e5; dE_tol = 1e-14;
 
-    [variance_list,max_var_ind] = sort(variance_list,'descend');
+    [variance_list, max_var_ind] = sort(variance_list,'descend');
 
-    n_points = min(max(cumsum((variance_list-var_filter_param*variance_list(1))>0)),n_points);
+    n_points = min( ...
+        max( ...
+            cumsum( ...
+                (variance_list - var_filter_param * variance_list(1)) > 0 ...
+            ) ...
+        ), ...
+        n_points ...
+    );
 
-    data_mat = data_mat(:,max_var_ind(1:n_points));
+    data_mat = data_mat(:, max_var_ind(1:n_points));
 
-    psi_vector = 2*pi*rand(size(data_mat,1),1);
+    psi_vector = 2*pi * rand(size(data_mat, 1), 1);
 
-    Mt = [cos(psi_vector),sin(psi_vector)];
-    Mb = (Mt'*Mt)\(Mt'*data_mat);
+    Mt = [ cos(psi_vector), sin(psi_vector) ];
+    Mb = (Mt' * Mt) \ (Mt' * data_mat);
     
     % Used to determine when to print processing update
     prev_percent_complete = -1;
@@ -62,7 +69,7 @@ function avg_pixel_values = optimize_coefficients(data_mat)
             prev_percent_complete = percent_complete;
         end
 
-        if abs(E-E_old)<dE_tol
+        if abs(E - E_old)<dE_tol
             break
         end
         E_old = E;
@@ -112,7 +119,7 @@ function [t_list, omega_list] = fidget_spinner_FFT_complex(avg_pixel_values, fra
     omega_list = de_alias_signal(heights_filtered, N_window);
 
     % %convert from integer frequencies to angular velocity
-    omega_factor = 2*pi*frame_rate/N_window;
+    omega_factor = 2*pi * frame_rate/N_window;
     omega_list = omega_factor*omega_list;
 
     % If showAnalysis is true, generate plots showing different stages of
